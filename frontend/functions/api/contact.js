@@ -110,13 +110,25 @@ export async function onRequestPost(context) {
     const safeMessage = message.trim().slice(0, 5000);
 
     // --- Read API key from Cloudflare environment ---
-    const RESEND_API_KEY = env.resend_api;
+    // Cloudflare env vars are case-sensitive. Check common naming conventions.
+    const RESEND_API_KEY = env.resend_api || env.RESEND_API;
+
+    // Debug: log which env keys are available (names only, never values)
+    const availableEnvKeys = Object.keys(env).filter(k => !k.startsWith('__'));
+    console.log(
+      `[contact] Available env keys: [${availableEnvKeys.join(', ') || '(none)'}]\n` +
+      `[contact]   env.resend_api present: ${!!env.resend_api}\n` +
+      `[contact]   env.RESEND_API present: ${!!env.RESEND_API}`
+    );
 
     if (!RESEND_API_KEY) {
       console.error(
-        '[contact] resend_api environment variable is not set. ' +
-        'Add it in Cloudflare Pages Dashboard → Settings → Variables & Secrets, ' +
-        'and in .dev.vars for local development.'
+        `[contact] resend_api not found.\n` +
+        `  Available env keys: [${availableEnvKeys.join(', ') || '(none)'}]\n` +
+        `  → Add "resend_api" in Cloudflare Pages → Settings → Variables & Secrets\n` +
+        `  → For local: add resend_api=re_... to frontend/.dev.vars\n` +
+        `  → Ensure the variable is set for BOTH "Build" AND "Functions" in Cloudflare\n` +
+        `  → Redeploy after adding variables.`
       );
       return new Response(
         JSON.stringify({ error: 'Email delivery is not configured. Please try again later.' }),
