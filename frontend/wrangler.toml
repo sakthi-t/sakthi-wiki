@@ -5,9 +5,14 @@ name = "sakthi-wiki"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-06-04"
 
+# CRITICAL: keep_vars = true tells Cloudflare to preserve dashboard
+# environment variables when deploying with wrangler.toml.
+# Without this, an empty [vars] section (or any [vars] section) will
+# WIPE all variables set in Cloudflare Dashboard → Settings → Variables.
+keep_vars = true
+
 # Environment variables for Pages Functions.
-# Values for production are set in Cloudflare Pages Dashboard →
-# Settings → Variables & Secrets.
+# Production values are set in Cloudflare Pages Dashboard →
+# Settings → Variables & Secrets (as encrypted secrets — recommended).
 # For local development, set them in .dev.vars (gitignored).
-[vars]
-# resend_api is set as a secret in Cloudflare Pages — do not hardcode here.
+# DO NOT declare [vars] here — let dashboard vars flow through.
