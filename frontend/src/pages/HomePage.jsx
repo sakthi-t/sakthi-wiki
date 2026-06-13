@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { getProjects } from '../utils/search.js';
-import ContactForm from '../components/ContactForm.jsx';
+import ContactCard from '../components/ContactCard.jsx';
 import './HomePage.css';
 
 /**
@@ -92,9 +92,8 @@ export default function HomePage() {
         <h2>Get in Touch</h2>
         <p className="section-description">
           Have a question, want to collaborate, or just want to say hi?
-          Fill out the form below and I'll get back to you.
         </p>
-        <ContactForm />
+        <ContactCard />
       </section>
     </div>
   );
