@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Wrangler local env vars — contains API keys, never commit
+.dev.vars

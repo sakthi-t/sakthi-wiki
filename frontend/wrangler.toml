@@ -1,0 +1,13 @@
+# Cloudflare Pages configuration
+# https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+
+name = "sakthi-wiki"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-06-04"
+
+# Environment variables for Pages Functions.
+# Values for production are set in Cloudflare Pages Dashboard →
+# Settings → Variables & Secrets.
+# For local development, set them in .dev.vars (gitignored).
+[vars]
+# resend_api is set as a secret in Cloudflare Pages — do not hardcode here.

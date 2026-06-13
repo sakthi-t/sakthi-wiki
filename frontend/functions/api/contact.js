@@ -2,105 +2,171 @@
  * Cloudflare Pages Function — Contact Form Handler
  * POST /api/contact
  *
- * Forwards form submissions to sakthi@sakthi.wiki.
- * The email address is NEVER exposed to the client.
+ * Uses Resend (https://resend.com) to deliver form submissions to
+ * sakthi@sakthi.wiki. The destination email address is NEVER exposed
+ * to the client — it only exists server-side in this function.
  *
- * In production, replace the fetch URL with your actual email service
- * (Resend, SendGrid, Mailchannels, etc.).
+ * Required environment variable (set in Cloudflare Pages dashboard
+ * and in .dev.vars for local dev):
+ *   resend_api — your Resend API key
  *
- * For Mailchannels (free on Cloudflare Workers):
- *   See: https://blog.cloudflare.com/sending-email-from-workers-with-mailchannels/
+ * Rate limiting: 5 submissions per minute per IP (basic abuse prevention).
  */
 
+// Simple in-memory rate limiter (resets on cold start — acceptable for a
+// low-traffic personal contact form).
+const RATE_LIMIT_WINDOW = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 5;
+const rateLimitMap = new Map();
+
+function getClientIP(request) {
+  return (
+    request.headers.get('CF-Connecting-IP') ||
+    request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
+    '127.0.0.1'
+  );
+}
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
+    rateLimitMap.set(ip, { windowStart: now, count: 1 });
+    return { allowed: true };
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return { allowed: false };
+  }
+
+  entry.count += 1;
+  return { allowed: true };
+}
+
 export async function onRequestPost(context) {
-  const { request } = context;
+  const { request, env } = context;
 
   try {
-    const body = await request.json();
+    // --- Rate limiting ---
+    const clientIP = getClientIP(request);
+    const rateCheck = checkRateLimit(clientIP);
+
+    if (!rateCheck.allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Too many submissions. Please try again in a minute.' }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // --- Parse body ---
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { name, email, message } = body;
 
-    // Validate
-    if (!name || !email || !message) {
-      return new Response(JSON.stringify({ error: 'All fields are required.' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    // --- Validate ---
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Name is required.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Basic email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return new Response(JSON.stringify({ error: 'Invalid email address.' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return new Response(
+        JSON.stringify({ error: 'A valid email address is required.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Anti-spam: reject if honeypot filled
+    if (!message || typeof message !== 'string' || message.trim().length < 10) {
+      return new Response(
+        JSON.stringify({ error: 'Message must be at least 10 characters.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // --- Anti-spam honeypot ---
     if (body.website) {
-      // Silently succeed to not tip off bots
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      // Silently succeed so bots don't know they were caught.
+      console.log(`[contact] Honeypot triggered — silently rejecting submission from ${clientIP}`);
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    // === SEND EMAIL ===
-    //
-    // Option A: Use Mailchannels (free on Cloudflare Workers)
-    // Uncomment and configure with your domain:
-    //
-    // const sendRequest = new Request('https://api.mailchannels.net/tx/v1/send', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     personalizations: [{ to: [{ email: 'sakthi@sakthi.wiki' }] }],
-    //     from: { email: 'noreply@sakthi.wiki', name: 'Sakthi Wiki Contact' },
-    //     subject: `New contact from ${name}`,
-    //     content: [{
-    //       type: 'text/plain',
-    //       value: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-    //     }],
-    //   }),
-    // });
-    // const sendResponse = await fetch(sendRequest);
-    //
-    // if (!sendResponse.ok) {
-    //   throw new Error('Failed to send email');
-    // }
+    // --- Sanitize ---
+    const safeName = name.trim().slice(0, 200);
+    const safeEmail = email.trim().slice(0, 254);
+    const safeMessage = message.trim().slice(0, 5000);
 
-    // Option B: Use Resend (https://resend.com)
-    // const sendResponse = await fetch('https://api.resend.com/emails', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${context.env.RESEND_API_KEY}`,
-    //   },
-    //   body: JSON.stringify({
-    //     from: 'Sakthi Wiki <noreply@sakthi.wiki>',
-    //     to: 'sakthi@sakthi.wiki',
-    //     subject: `New contact from ${name}`,
-    //     text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-    //     reply_to: email,
-    //   }),
-    // });
+    // --- Read API key from Cloudflare environment ---
+    const RESEND_API_KEY = env.resend_api;
 
-    // Option C: Use Cloudflare Email Routing + Workers
-    // See: https://developers.cloudflare.com/email-routing/
+    if (!RESEND_API_KEY) {
+      console.error(
+        '[contact] resend_api environment variable is not set. ' +
+        'Add it in Cloudflare Pages Dashboard → Settings → Variables & Secrets, ' +
+        'and in .dev.vars for local development.'
+      );
+      return new Response(
+        JSON.stringify({ error: 'Email delivery is not configured. Please try again later.' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Option D: Log to console (for testing — replace with real sending)
-    console.log('Contact form submission:');
-    console.log(`  From: ${name} <${email}>`);
-    console.log(`  Message: ${message}`);
+    // --- Send email via Resend ---
+    console.log(`[contact] Sending email from ${safeName} <${safeEmail}> via Resend`);
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: 'Sakthi Wiki <noreply@sakthi.wiki>',
+        to: 'sakthi@sakthi.wiki',
+        reply_to: safeEmail,
+        subject: `New contact from ${safeName}`,
+        text: [
+          `Name: ${safeName}`,
+          `Email: ${safeEmail}`,
+          '',
+          'Message:',
+          safeMessage,
+        ].join('\n'),
+      }),
     });
+
+    if (!resendResponse.ok) {
+      const errorBody = await resendResponse.text();
+      console.error(`[contact] Resend API error (${resendResponse.status}):`, errorBody);
+      throw new Error(`Resend returned ${resendResponse.status}: ${errorBody}`);
+    }
+
+    const resendData = await resendResponse.json();
+    console.log(`[contact] Email sent successfully — Resend ID: ${resendData.id}`);
+
+    // --- Success ---
+    return new Response(
+      JSON.stringify({ success: true }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (err) {
-    console.error('Contact form error:', err);
-    return new Response(JSON.stringify({ error: 'Internal server error. Please try again later.' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error('[contact] Unexpected error:', err);
+    return new Response(
+      JSON.stringify({ error: 'Something went wrong. Please try again later.' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
