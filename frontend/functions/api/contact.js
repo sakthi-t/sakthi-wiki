@@ -110,28 +110,33 @@ export async function onRequestPost(context) {
     const safeMessage = message.trim().slice(0, 5000);
 
     // --- Read API key from Cloudflare environment ---
-    // Cloudflare env vars are case-sensitive. Check common naming conventions.
-    const RESEND_API_KEY = env.resend_api || env.RESEND_API;
+    // Cloudflare env vars are case-sensitive. Try multiple access patterns.
+    // context.env and env should be the same, but check both defensively.
+    const RESEND_API_KEY =
+      env.resend_api ||
+      env.RESEND_API ||
+      context.env?.resend_api ||
+      context.env?.RESEND_API;
 
-    // Debug: log which env keys are available (names only, never values)
-    const availableEnvKeys = Object.keys(env).filter(k => !k.startsWith('__'));
-    console.log(
-      `[contact] Available env keys: [${availableEnvKeys.join(', ') || '(none)'}]\n` +
-      `[contact]   env.resend_api present: ${!!env.resend_api}\n` +
-      `[contact]   env.RESEND_API present: ${!!env.RESEND_API}`
-    );
+    // Find ALL available env keys (names only — never log values).
+    const envKeys = Object.keys(env).filter(k => !k.startsWith('__'));
+    const ctxKeys = context.env ? Object.keys(context.env).filter(k => !k.startsWith('__')) : [];
 
     if (!RESEND_API_KEY) {
-      console.error(
-        `[contact] resend_api not found.\n` +
-        `  Available env keys: [${availableEnvKeys.join(', ') || '(none)'}]\n` +
-        `  → Add "resend_api" in Cloudflare Pages → Settings → Variables & Secrets\n` +
-        `  → For local: add resend_api=re_... to frontend/.dev.vars\n` +
-        `  → Ensure the variable is set for BOTH "Build" AND "Functions" in Cloudflare\n` +
-        `  → Redeploy after adding variables.`
-      );
+      // Return debug info in the error so we can diagnose without needing
+      // access to Cloudflare Functions logs.
       return new Response(
-        JSON.stringify({ error: 'Email delivery is not configured. Please try again later.' }),
+        JSON.stringify({
+          error: 'Email delivery is not configured. Please try again later.',
+          debug: {
+            envKeys,
+            ctxEnvKeys: ctxKeys,
+            resend_api_present: !!env.resend_api,
+            RESEND_API_present: !!env.RESEND_API,
+            deploymentTimestamp: new Date().toISOString(),
+            commit: '6c2278d', // bump this on every relevant commit
+          },
+        }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
