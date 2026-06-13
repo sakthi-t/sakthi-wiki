@@ -1,0 +1,116 @@
+.search-page-hero {
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  text-align: center;
+  padding: 3rem 1.5rem 2rem;
+}
+
+.search-page-hero h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.6rem;
+}
+
+.search-page-hero p {
+  color: var(--text-light);
+  margin: 0 0 1.75rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.search-page-form {
+  width: 100%;
+}
+
+.search-page-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.35rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-page-input-wrapper:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.12);
+}
+
+.search-page-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-light);
+  margin: 0 0.5rem 0 0.75rem;
+  flex-shrink: 0;
+}
+
+.search-page-input-wrapper input {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 1rem;
+  font-family: inherit;
+  padding: 0.75rem 0;
+  outline: none;
+}
+
+.search-page-input-wrapper input::placeholder {
+  color: var(--text-light);
+  opacity: 0.6;
+}
+
+.search-page-submit {
+  padding: 0.65rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  flex-shrink: 0;
+  margin: 0.25rem;
+}
+
+.search-page-submit:hover {
+  background: #7a6548;
+}
+
+.search-page-submit:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 600px) {
+  .search-page-hero {
+    padding: 2rem 0.5rem 1.25rem;
+  }
+
+  .search-page-hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .search-page-input-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.5rem;
+  }
+
+  .search-page-icon {
+    display: none;
+  }
+
+  .search-page-input-wrapper input {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .search-page-submit {
+    margin: 0.25rem 0 0;
+    padding: 0.75rem;
+    text-align: center;
+  }
+}

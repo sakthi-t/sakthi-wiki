@@ -1,0 +1,154 @@
+.search-results-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 0 80px;
+}
+
+.search-results-header {
+  margin-bottom: 32px;
+}
+
+.search-results-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.search-empty {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.search-empty h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.search-empty p {
+  color: var(--text-light);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.search-hint {
+  margin-top: 20px;
+  font-size: 0.9rem !important;
+  font-style: italic;
+}
+
+/* Group */
+.search-group {
+  margin-bottom: 32px;
+}
+
+.search-group-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Result Card */
+.search-result-card {
+  display: block;
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.search-result-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.card-excerpt {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  line-height: 1.6;
+  margin: 0 0 10px;
+}
+
+.card-snippets {
+  margin-top: 8px;
+}
+
+.card-snippet {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  line-height: 1.5;
+  margin: 0 0 6px;
+  padding-left: 12px;
+  border-left: 3px solid var(--border);
+}
+
+.card-snippet:last-child {
+  margin-bottom: 0;
+}
+
+.card-score {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: var(--text-light);
+  opacity: 0.7;
+}
+
+/* Highlight marks */
+.search-result-card mark,
+.card-snippet mark,
+.card-excerpt mark {
+  background: var(--highlight);
+  color: var(--text);
+  border-radius: 2px;
+  padding: 1px 3px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .search-results-page {
+    padding: 20px 0 60px;
+  }
+
+  .search-result-card {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 400px) {
+  .search-results-page {
+    padding: 12px 0 40px;
+  }
+
+  .search-result-card {
+    padding: 12px 14px;
+  }
+
+  .card-title {
+    font-size: 0.95rem;
+  }
+
+  .card-excerpt {
+    font-size: 0.82rem;
+  }
+
+  .card-snippet {
+    font-size: 0.78rem;
+  }
+}
